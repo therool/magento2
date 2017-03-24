@@ -41,17 +41,24 @@ define([
          * @param {jQuery} element - Comment holder
          */
         (function lookup(element) {
-            // prevent cross origin iframe content reading
-            if ($(element).prop('tagName') === 'IFRAME') {
-                var iframeHostName = $('<a>').prop('href', $(element).prop('src'))
-                                             .prop('hostname');
+            var nodeName,
+                iframeSrc;
 
-                if (window.location.hostname !== iframeHostName) {
-                    return [];
+            $(element).filter(function(index, el) {
+                // Prevent cross origin iframe content reading
+                nodeName = el.nodeName.toLowerCase();
+
+                if (nodeName === "iframe") {
+                    iframeSrc = document.createElement('a');
+                    iframeSrc.href = element.src;
+
+                    if (window.location.hostname !== iframeSrc.hostname) {
+                        return false;
+                    }
                 }
-            }
 
-            $(element).contents().each(function (index, el) {
+                return true;
+            }).contents().each(function (index, el) {
                 switch (el.nodeType) {
                     case 1: // ELEMENT_NODE
                         lookup(el);
