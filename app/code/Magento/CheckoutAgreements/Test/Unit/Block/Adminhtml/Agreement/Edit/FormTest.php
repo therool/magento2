@@ -134,13 +134,25 @@ class FormTest extends \PHPUnit\Framework\TestCase
                 false, [1]
             ],
             [
-                false, [1,2]
+                false, [2]
+            ],
+            [
+                false, [1, 2]
+            ],
+            [
+                false, [2, 1]
             ],
             [
                 true, [1]
             ],
             [
-                true, [1,2]
+                true, [2]
+            ],
+            [
+                true, [1, 2]
+            ],
+            [
+                true, [2, 1]
             ]
         ];
     }
@@ -150,6 +162,8 @@ class FormTest extends \PHPUnit\Framework\TestCase
      */
     public function testPrepareForm($singleStoreMode, array $storeIds)
     {
+        $this->agreementMock->setData('stores', $storeIds);
+
         $this->storeManagerMock
             ->expects($this->once())
             ->method('isSingleStoreMode')
