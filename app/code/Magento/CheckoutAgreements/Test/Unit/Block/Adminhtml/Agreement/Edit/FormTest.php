@@ -127,12 +127,33 @@ class FormTest extends \PHPUnit\Framework\TestCase
         return $method->invokeArgs($object, $parameters);
     }
 
-    public function testPrepareForm()
+    public function dataForStoreState()
+    {
+        return [
+            [
+                false, [1]
+            ],
+            [
+                false, [1,2]
+            ],
+            [
+                true, [1]
+            ],
+            [
+                true, [1,2]
+            ]
+        ];
+    }
+
+    /**
+     * @dataProvider dataForStoreState
+     */
+    public function testPrepareForm($singleStoreMode, array $storeIds)
     {
         $this->storeManagerMock
             ->expects($this->once())
             ->method('isSingleStoreMode')
-            ->willReturn(true);
+            ->willReturn($singleStoreMode);
         $this->registryMock
             ->expects($this->once())
             ->method('registry')
