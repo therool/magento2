@@ -16,47 +16,47 @@ class FormTest extends \PHPUnit\Framework\TestCase
     protected $objectManager;
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\ObjectManagerInterface
      */
     protected $objectManagerMock;
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Store\Model\StoreManagerInterface
      */
     protected $storeManagerMock;
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Store\Api\Data\StoreInterface
      */
     protected $storeMock;
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Store\Model\System\Store
      */
     protected $systemStoreMock;
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\CheckoutAgreements\Model\Agreement
      */
     protected $agreementMock;
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\Registry
      */
     protected $registryMock;
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\Data\FormFactory
      */
     protected $formFactory;
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\Data\Form\Element\Factory
      */
     protected $factoryElement;
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\Data\Form\Element\CollectionFactory
      */
     protected $factoryCollection;
 
@@ -138,10 +138,6 @@ class FormTest extends \PHPUnit\Framework\TestCase
             ->method('registry')
             ->with('checkout_agreement')
             ->willReturn($this->agreementMock);
-//        $this->agreementMock
-//            ->expects($this->once())
-//            ->method('getId')
-//            ->willReturn(100);//agreementId
         $this->storeManagerMock
             ->expects($this->exactly(2))
             ->method('getStore')
@@ -152,11 +148,11 @@ class FormTest extends \PHPUnit\Framework\TestCase
             ->method('getId')
             ->willReturn(100);//storeId
 
-//        $this->agreementMock->setStores([1,2,3]);
-
         $this->invokeMethod($this->model, '_prepareForm');
 
-        \Zend_Debug::dump($this->model->getForm()
-            ->getElement('stores')->toHtml());
+        $this->assertEquals(
+            100,
+            $this->model->getForm()->getElement('stores')->getEscapedValue()
+        );
     }
 }
