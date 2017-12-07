@@ -237,10 +237,12 @@ class FormTest extends \PHPUnit\Framework\TestCase
                 ->willReturn($this->rendererMock);
         }
 
+        $this->formMock
+            ->expects($this->once())
+            ->method('setValues')
+            ->with([
+                'stores' => $singleStoreMode ? $storeIds[0] : $storeIds
+            ]);
         $this->invokeMethod($this->model, '_prepareForm');
-        $this->assertEquals(
-            $singleStoreMode ? $storeIds[0] : $storeIds,
-            $this->agreementMock->getData('stores')
-        );
     }
 }
