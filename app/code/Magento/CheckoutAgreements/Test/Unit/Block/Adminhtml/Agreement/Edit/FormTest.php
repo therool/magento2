@@ -5,9 +5,6 @@
  */
 namespace Magento\CheckoutAgreements\Test\Unit\Block\Adminhtml\Agreement\Edit;
 
-use Magento\CheckoutAgreements\Model\AgreementsProvider;
-use Magento\Store\Model\ScopeInterface;
-
 class FormTest extends \PHPUnit\Framework\TestCase
 {
     /**
@@ -48,17 +45,32 @@ class FormTest extends \PHPUnit\Framework\TestCase
     /**
      * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\Data\FormFactory
      */
-    protected $formFactory;
+    protected $formFactoryMock;
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\Data\Form\Element\Factory
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\Data\Form::class
      */
-    protected $factoryElement;
+    protected $formMock;
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\Data\Form\Element\CollectionFactory
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\Data\Form\Element\Fieldset::class
      */
-    protected $factoryCollection;
+    protected $fieldsetMock;
+
+    /**
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\Data\Form\Element\Multiselect::class
+     */
+    protected $multiselectMock;
+
+    /**
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\Data\Form\Element\Hidden::class
+     */
+    protected $hiddenMock;
+
+    /**
+     * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Backend\Block\Store\Switcher\Form\Renderer\Fieldset\Element::class
+     */
+    protected $rendererMock;
 
     /**
      * @var \Magento\CheckoutAgreements\Block\Adminhtml\Agreement\Edit\Form
@@ -74,39 +86,23 @@ class FormTest extends \PHPUnit\Framework\TestCase
         $this->systemStoreMock = $this->createMock(\Magento\Store\Model\System\Store::class);
         $this->agreementMock = $this->objectManager->getObject(\Magento\CheckoutAgreements\Model\Agreement::class);
         $this->registryMock = $this->createMock(\Magento\Framework\Registry::class);
-        $this->formFactory = $this->objectManager->getObject(
-            \Magento\Framework\Data\FormFactory::class,
-            ['objectManager' => $this->objectManagerMock]
-        );
-        $this->factoryElement = $this->objectManager->getObject(
-            \Magento\Framework\Data\Form\Element\Factory::class,
-            ['objectManager' => $this->objectManagerMock]
-        );
-        $this->factoryCollection = $this->objectManager->getObject(
-            \Magento\Framework\Data\Form\Element\CollectionFactory::class,
-            ['objectManager' => $this->objectManagerMock]
+        $this->formFactoryMock = $this->createMock(\Magento\Framework\Data\FormFactory::class);
+        $this->formMock = $this->createMock(\Magento\Framework\Data\Form::class);
+        $this->fieldsetMock = $this->createMock(\Magento\Framework\Data\Form\Element\Fieldset::class);
+        $this->multiselectMock = $this->createMock(\Magento\Framework\Data\Form\Element\Multiselect::class);
+        $this->hiddenMock = $this->createMock(\Magento\Framework\Data\Form\Element\Hidden::class);
+        $this->rendererMock = $this->createMock(
+            \Magento\Backend\Block\Store\Switcher\Form\Renderer\Fieldset\Element::class
         );
         $this->model = $this->objectManager->getObject(
             \Magento\CheckoutAgreements\Block\Adminhtml\Agreement\Edit\Form::class,
             [
                 'storeManager' => $this->storeManagerMock,
-                'formFactory' => $this->formFactory,
+                'formFactory' => $this->formFactoryMock,
                 'registry' => $this->registryMock,
                 'systemStore' => $this->systemStoreMock
             ]
         );
-
-        $this->objectManagerMock->expects($this->any())
-            ->method('create')
-            ->willReturnCallback(
-                function($className, $arguments) {
-                    // Always inject object manager and factory classes
-                    $arguments['objectManager'] = $this->objectManagerMock;
-                    $arguments['factoryElement'] = $this->factoryElement;
-                    $arguments['factoryCollection'] = $this->factoryCollection;
-                    return $this->objectManager->getObject($className, $arguments);
-                }
-            );
     }
 
     /**
@@ -163,15 +159,34 @@ class FormTest extends \PHPUnit\Framework\TestCase
     {
         $this->agreementMock->setData('stores', $storeIds);
 
-        $this->storeManagerMock
-            ->expects($this->once())
-            ->method('isSingleStoreMode')
-            ->willReturn($singleStoreMode);
         $this->registryMock
             ->expects($this->once())
             ->method('registry')
             ->with('checkout_agreement')
             ->willReturn($this->agreementMock);
+        $this->storeManagerMock
+            ->expects($this->once())
+            ->method('isSingleStoreMode')
+            ->willReturn($singleStoreMode);
+        $this->formFactoryMock
+            ->expects($this->once())
+            ->method('create')
+            ->with([
+                'data' => [
+                    'id' => 'edit_form',
+                    'action' => $this->model->getData('action'),
+                    'method' => 'post'
+                ]
+            ])
+            ->willReturn($this->formMock);
+        $this->formMock
+            ->expects($this->once())
+            ->method('addFieldset')
+            ->with(
+                'base_fieldset',
+                ['legend' => __('Terms and Conditions Information'), 'class' => 'fieldset-wide']
+            )
+            ->willReturn($this->fieldsetMock);
 
         if ($singleStoreMode) {
             $this->storeManagerMock
@@ -183,25 +198,49 @@ class FormTest extends \PHPUnit\Framework\TestCase
                 ->expects($this->exactly(2))
                 ->method('getId')
                 ->willReturn($storeIds[0]);
+            $this->fieldsetMock
+                ->expects($this->at(4))
+                ->method('addField')
+                ->with(
+                    'stores',
+                    'hidden',
+                    ['name' => 'stores[]', 'value' => $storeIds[0]]
+                )
+                ->willReturn($this->hiddenMock);
         } else {
-            $rendererMock = $this->createMock(
-                \Magento\Backend\Block\Store\Switcher\Form\Renderer\Fieldset\Element::class
-            );
             $this->systemStoreMock
                 ->expects($this->once())
                 ->method('getStoreValuesForForm')
                 ->with(false, true)
                 ->willReturn($storeIds);
+            $this->fieldsetMock
+                ->expects($this->at(4))
+                ->method('addField')
+                ->with(
+                    'stores',
+                    'multiselect',
+                    [
+                        'name' => 'stores[]',
+                        'label' => __('Store View'),
+                        'title' => __('Store View'),
+                        'required' => true,
+                        'values' => $storeIds
+                    ])
+                ->willReturn($this->multiselectMock);
             $this->model->getLayout()
                 ->expects($this->once())
                 ->method('createBlock')
-                ->willReturn($rendererMock);
+                ->willReturn($this->rendererMock);
+            $this->multiselectMock
+                ->expects($this->once())
+                ->method('setRenderer')
+                ->willReturn($this->rendererMock);
         }
 
         $this->invokeMethod($this->model, '_prepareForm');
         $this->assertEquals(
             $singleStoreMode ? $storeIds[0] : $storeIds,
-            $this->model->getForm()->getElement('stores')->getData('value')
+            $this->agreementMock->getData('stores')
         );
     }
 }
