@@ -141,7 +141,7 @@ class Form extends \Magento\Backend\Block\Widget\Form\Generic
                 'hidden',
                 ['name' => 'stores[]', 'value' => $this->_storeManager->getStore(true)->getId()]
             );
-            $model->setStoreId($this->_storeManager->getStore(true)->getId());
+            $model->setStores($this->_storeManager->getStore(true)->getId());
         }
 
         $fieldset->addField(

@@ -72,7 +72,6 @@ class FormTest extends \PHPUnit\Framework\TestCase
         $this->storeManagerMock = $this->createMock(\Magento\Store\Model\StoreManagerInterface::class);
         $this->storeMock = $this->createMock(\Magento\Store\Api\Data\StoreInterface::class);
         $this->systemStoreMock = $this->createMock(\Magento\Store\Model\System\Store::class);
-//        $this->agreementMock = $this->createMock(\Magento\CheckoutAgreements\Model\Agreement::class);
         $this->agreementMock = $this->objectManager->getObject(\Magento\CheckoutAgreements\Model\Agreement::class);
         $this->registryMock = $this->createMock(\Magento\Framework\Registry::class);
         $this->formFactory = $this->objectManager->getObject(
@@ -173,21 +172,36 @@ class FormTest extends \PHPUnit\Framework\TestCase
             ->method('registry')
             ->with('checkout_agreement')
             ->willReturn($this->agreementMock);
-        $this->storeManagerMock
-            ->expects($this->exactly(2))
-            ->method('getStore')
-            ->with(true)
-            ->willReturn($this->storeMock);
-        $this->storeMock
-            ->expects($this->exactly(2))
-            ->method('getId')
-            ->willReturn(100);//storeId
+
+        if ($singleStoreMode) {
+            $this->storeManagerMock
+                ->expects($this->exactly(2))
+                ->method('getStore')
+                ->with(true)
+                ->willReturn($this->storeMock);
+            $this->storeMock
+                ->expects($this->exactly(2))
+                ->method('getId')
+                ->willReturn($storeIds[0]);
+        } else {
+            $rendererMock = $this->createMock(
+                \Magento\Backend\Block\Store\Switcher\Form\Renderer\Fieldset\Element::class
+            );
+            $this->systemStoreMock
+                ->expects($this->once())
+                ->method('getStoreValuesForForm')
+                ->with(false, true)
+                ->willReturn($storeIds);
+            $this->model->getLayout()
+                ->expects($this->once())
+                ->method('createBlock')
+                ->willReturn($rendererMock);
+        }
 
         $this->invokeMethod($this->model, '_prepareForm');
-
         $this->assertEquals(
-            100,
-            $this->model->getForm()->getElement('stores')->getEscapedValue()
+            $singleStoreMode ? $storeIds[0] : $storeIds,
+            $this->model->getForm()->getElement('stores')->getData('value')
         );
     }
 }
